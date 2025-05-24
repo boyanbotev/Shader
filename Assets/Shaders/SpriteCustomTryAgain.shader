@@ -98,6 +98,15 @@ Shader "Custom/2D/UnlitSprite"
 
             half4 frag(VertexOutput i) : SV_Target
             {
+                // 1. Sample the main sprite texture (for shape/alpha mask)
+                half4 mainSpriteTexture = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+
+                // Optional: Discard pixels outside the main sprite's alpha mask early
+                // This is good if _MainTex has hard edges.
+                // For smooth edges, the final alpha calculation will handle it.
+                if (mainSpriteTexture.a < 0.01h) { discard; }
+
+
                 float2 distortionUV = i.distortionUV;
                 distortionUV.x += _DistortionScrollSpeedX * _Time.y;
                 distortionUV.y += _DistortionScrollSpeedY * _Time.y;
@@ -120,6 +129,8 @@ Shader "Custom/2D/UnlitSprite"
                 finalColor.rgb += highlightTex.rgb * _HighlightColor.rgb * highlightIntensity;
 
                 finalColor.rgb = saturate(finalColor.rgb);
+
+                finalColor.a = mainSpriteTexture.a * _BaseWaterColor.a * i.color.a;
                 
                 return finalColor;
             }
